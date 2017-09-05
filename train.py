@@ -99,6 +99,13 @@ class Trainer:
                 example.charIndexes.append(charID)
 
             for idx in range(example.size):
+                bi = inst.m_bichar[idx]
+                bicharID = self.hyperParams.bicharAlpha.from_string(bi)
+                if bicharID == -1:
+                    bicharID = self.hyperParams.bicharUNKID
+                example.bicharIndexes.append(bicharID)
+
+            for idx in range(example.size):
                 l = inst.m_label[idx]
                 labelID = self.hyperParams.labelAlpha.from_string(l)
                 example.labelIndexes.append(labelID)
@@ -112,6 +119,7 @@ class Trainer:
             if maxSentSize < len(e.labelIndexes):
                 maxSentSize = len(e.labelIndexes)
         batchCharFeats = torch.autograd.Variable(torch.LongTensor(batch, maxSentSize))
+        batchBiCharFeats = torch.autograd.Variable(torch.LongTensor(batch, maxSentSize))
         batchLabel = torch.autograd.Variable(torch.LongTensor(batch * maxSentSize))
 
         for idx in range(batch):
@@ -123,10 +131,15 @@ class Trainer:
                     batchCharFeats.data[idx][idy] = self.hyperParams.charPaddingID
 
                 if idy < e.size:
+                    batchBiCharFeats.data[idx][idy] = e.bicharIndexes[idy]
+                else:
+                    batchBiCharFeats.data[idx][idy] = self.hyperParams.bicharPaddingID
+
+                if idy < e.size:
                     batchLabel.data[idx * maxSentSize + idy] = e.labelIndexes[idy]
                 else:
                     batchLabel.data[idx * maxSentSize + idy] = 0
-        return batchCharFeats, batchLabel, batch
+        return batchCharFeats, batchBiCharFeats, batchLabel, batch
 
 
     def train(self, train_file, dev_file, test_file, model_file):
@@ -178,12 +191,12 @@ class Trainer:
                     end_pos = train_num
                 for idx in range(start_pos, end_pos):
                     exams.append(trainExamples[indexes[idx]])
-                batchCharFeats, batchLabel, batch = self.getBatchFeatLabel(exams)
+                batchCharFeats, batchBiCharFeats, batchLabel, batch = self.getBatchFeatLabel(exams)
                 encoder_optimizer.zero_grad()
                 decoder_optimizer.zero_grad()
 
                 encoderHidden = self.encoder.init_hidden(batch)
-                encoderOutput, encoderHidden = self.encoder(batchCharFeats, encoderHidden)
+                encoderOutput, encoderHidden = self.encoder(batchCharFeats, batchBiCharFeats,encoderHidden)
                 loss = 0
                 decoderOutput = self.decoder(encoderOutput)
 
@@ -238,15 +251,11 @@ class Trainer:
         self.hyperParams.charAlpha.read(model_file + ".post")
         self.hyperParams.labelAlpha.read(model_file + ".response")
 
-        self.hyperParams.postStartID = self.hyperParams.charAlpha.from_string(self.hyperParams.start)
-        self.hyperParams.postEndID = self.hyperParams.charAlpha.from_string(self.hyperParams.end)
-        self.hyperParams.postUnkWordID = self.hyperParams.charAlpha.from_string(self.hyperParams.unk)
-        self.hyperParams.postPaddingID = self.hyperParams.charAlpha.from_string(self.hyperParams.padding)
-        self.hyperParams.postWordNum = self.hyperParams.charAlpha.m_size
+        self.hyperParams.charUNKID = self.hyperParams.charAlpha.from_string(self.hyperParams.unk)
+        self.hyperParams.charPaddingID = self.hyperParams.charAlpha.from_string(self.hyperParams.padding)
+        self.hyperParams.charNUM = self.hyperParams.charAlpha.m_size
 
-        self.hyperParams.responseUnkWordID = self.hyperParams.labelAlpha.from_string(self.hyperParams.unk)
-        self.hyperParams.responsePaddingID = self.hyperParams.labelAlpha.from_string(self.hyperParams.padding)
-        self.hyperParams.labelNum = self.hyperParams.labelAlpha.m_size
+        self.hyperParams.labelSize = self.hyperParams.labelAlpha.m_size
 
 
     def test(self, test_file, model_file):
@@ -260,9 +269,9 @@ class Trainer:
     def predict(self, exam):
         exams = []
         exams.append(exam)
-        batchCharFeats, batchLabel, batch = self.getBatchFeatLabel(exams)
+        batchCharFeats, batchBiCharFeats, batchLabel, batch = self.getBatchFeatLabel(exams)
         encoderHidden = self.encoder.init_hidden(batch)
-        encoderOutput, encoderHidden = self.encoder(batchCharFeats, encoderHidden)
+        encoderOutput, encoderHidden = self.encoder(batchCharFeats, batchBiCharFeats, encoderHidden)
         decoderOutput = self.decoder(encoderOutput)
         sent = []
         for idx in range(exam.size):

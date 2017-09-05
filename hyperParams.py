@@ -5,7 +5,7 @@ class HyperParams:
         self.labelSize = 0
 
         self.unk = '-UNKNOWN-'
-        self.padding = '-NULL-'
+        self.padding = '-null-'
 
         self.start = '-start-'
         self.end = '-end-'
@@ -18,7 +18,7 @@ class HyperParams:
 
         self.clip = 10
         self.maxIter = 100
-        self.verboseIter = 1
+        self.verboseIter = 100
 
         self.wordCutOff = 0
         self.wordEmbSize = 100
@@ -34,13 +34,14 @@ class HyperParams:
         self.bicharEmbSize = 100
         self.bicharFineTune = True
         self.bicharEmbFile = "E:\\py_workspace\\Seq2Seq_bmes\\data\\bichar.vec"
+        #self.bicharEmbFile = ""
 
         self.dropProb = 0.5
         self.rnnHiddenSize = 50
         self.hiddenSize = 50
         self.thread = 1
         self.learningRate = 0.001
-        self.maxInstance = 10
+        self.maxInstance = -1
         self.batch = 3
 
         self.charAlpha = Alphabet()

@@ -42,7 +42,7 @@ class Reader:
     def load_pretrain(self, file, alpha, unk):
         f = open(file, encoding='utf-8')
         allLines = f.readlines()
-        indexs = []
+        indexs = {}
         info = allLines[0].strip().split(' ')
         embDim = len(info) - 1
         emb = nn.Embedding(alpha.m_size, embDim)
@@ -51,7 +51,7 @@ class Reader:
             info = line.strip().split(' ')
             wordID = alpha.from_string(info[0])
             if wordID >= 0:
-                indexs.append(wordID)
+                indexs[wordID] = ""
                 for idx in range(embDim):
                     val = float(info[idx + 1])
                     emb.weight.data[wordID][idx] = val

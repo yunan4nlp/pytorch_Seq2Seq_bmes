@@ -13,23 +13,35 @@ class Encoder(nn.Module):
             reader = Reader()
             self.charEmb, self.charDim = reader.load_pretrain(hyperParams.charEmbFile, hyperParams.charAlpha, hyperParams.unk)
         self.charEmb.weight.requires_grad = hyperParams.charFineTune
+
+        if hyperParams.bicharEmbFile == "":
+            self.bicharEmb = nn.Embedding(hyperParams.bicharNUM, hyperParams.bicharEmbSize)
+            self.bicharDim = hyperParams.bicharEmbSize
+        else:
+            reader = Reader()
+            self.bicharEmb, self.bicharDim = reader.load_pretrain(hyperParams.bicharEmbFile, hyperParams.bicharAlpha, hyperParams.unk)
+        self.bicharEmb.weight.requires_grad = hyperParams.bicharFineTune
+
         self.dropOut = nn.Dropout(hyperParams.dropProb)
-        self.bilstm = nn.LSTM(input_size=self.charDim,
+        self.bilstm = nn.LSTM(input_size=self.charDim + self.bicharDim,
                               hidden_size=hyperParams.rnnHiddenSize,
                               batch_first=True,
                               bidirectional = True,
-                              num_layers = 1,
+                              num_layers = 2,
                               dropout=hyperParams.dropProb)
 
 
 
     def init_hidden(self, batch = 1):
-        return (torch.autograd.Variable(torch.zeros(2, batch, self.hyperParams.rnnHiddenSize)),
-                torch.autograd.Variable(torch.zeros(2, batch, self.hyperParams.rnnHiddenSize)))
+        return (torch.autograd.Variable(torch.zeros(4, batch, self.hyperParams.rnnHiddenSize)),
+                torch.autograd.Variable(torch.zeros(4, batch, self.hyperParams.rnnHiddenSize)))
 
-    def forward(self, charIndexes, hidden):
+    def forward(self, charIndexes, bicharIndexes, hidden):
         charRepresents = self.charEmb(charIndexes)
         charRepresents = self.dropOut(charRepresents)
-        output, hidden = self.bilstm(charRepresents, hidden)
+        bicharRepresents = self.bicharEmb(bicharIndexes)
+        bicharRepresents = self.dropOut(bicharRepresents)
+        concat = torch.cat((charRepresents, bicharRepresents), 2)
+        output, hidden = self.bilstm(concat, hidden)
         return output, hidden
 
