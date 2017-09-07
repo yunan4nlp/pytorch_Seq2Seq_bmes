@@ -10,7 +10,7 @@ class Decoder(nn.Module):
 
         reader = Reader()
         self.wordEmb, self.wordDim = reader.load_pretrain(hyperParams.wordEmbFile, hyperParams.wordAlpha, hyperParams.unk)
-
+        self.dropOut = torch.nn.Dropout(hyperParams.dropProb)
         self.lastWords = []
         self.hyperParams = hyperParams
         #self.linearLayer = nn.Linear(hyperParams.rnnHiddenSize * 2, hyperParams.labelSize)
@@ -36,6 +36,7 @@ class Decoder(nn.Module):
         for idx in range(sent_len):
             char_presentation = encoder_output.permute(1, 0, 2)[idx]
             last_word_presentation = self.wordEmb(last_word_indexes)
+            last_word_presentation = self.dropOut(last_word_presentation)
             concat = torch.cat((char_presentation, last_word_presentation), 1)
 
             hidden = self.linearLayer(concat)
