@@ -1,7 +1,8 @@
+from common import Alphabet
+
 class HyperParams:
     def __init__(self):
         self.wordNUM = 0
-        self.bicharNUM = 0
         self.labelSize = 0
 
         self.unk = '-UNKNOWN-'
@@ -14,36 +15,44 @@ class HyperParams:
         self.charUNKID = 0
         self.charNUM = 0
 
-        self.labelSize = 0
+        self.bicharPaddingID = 0
+        self.bicharUNKID = 0
+        self.bicharNUM = 0
+
+        self.wordPaddingID = 0
+        self.wordUNKID = 0
+        self.wordNUM = 0
 
         self.clip = 10
         self.maxIter = 100
-        self.verboseIter = 100
+        self.verboseIter = 1
 
         self.wordCutOff = 0
         self.wordEmbSize = 100
         self.wordFineTune = True
-        self.wordEmbFile = ""
+        self.wordEmbFile = "E:\\py_workspace\\Seq2Seq_bmes\\data\\emb_sample.txt"
 
         self.charCutOff = 0
         self.charEmbSize = 100
         self.charFineTune = True
-        self.charEmbFile = "E:\\py_workspace\\Seq2Seq_bmes\\data\\char.vec"
+        #self.charEmbFile = "E:\\py_workspace\\Seq2Seq_bmes\\data\\char.vec"
+        self.charEmbFile = ""
 
         self.bicharCutOff = 0
         self.bicharEmbSize = 100
         self.bicharFineTune = True
-        self.bicharEmbFile = "E:\\py_workspace\\Seq2Seq_bmes\\data\\bichar.vec"
-        #self.bicharEmbFile = ""
+        #self.bicharEmbFile = "E:\\py_workspace\\Seq2Seq_bmes\\data\\bichar.vec"
+        self.bicharEmbFile = ""
 
-        self.dropProb = 0.5
+        self.dropProb = 0
         self.rnnHiddenSize = 50
         self.hiddenSize = 50
         self.thread = 1
         self.learningRate = 0.001
-        self.maxInstance = -1
-        self.batch = 3
+        self.maxInstance = 5
+        self.batch = 1
 
+        self.wordAlpha = Alphabet()
         self.charAlpha = Alphabet()
         self.bicharAlpha = Alphabet()
         self.labelAlpha = Alphabet()
@@ -61,65 +70,3 @@ class HyperParams:
         print('verboseIter = ', self.verboseIter)
 
 
-class Alphabet:
-    def __init__(self):
-        self.max_cap = 1e8
-        self.m_size = 0
-        self.m_b_fixed = False
-        self.id2string = []
-        self.string2id = {}
-
-    def from_id(self, qid, defineStr = ''):
-        if int(qid) < 0 or self.m_size <= qid:
-            return defineStr
-        else:
-            return self.id2string[qid]
-
-    def from_string(self, str):
-        if str in self.string2id:
-            return self.string2id[str]
-        else:
-            if not self.m_b_fixed:
-                newid = self.m_size
-                self.id2string.append(str)
-                self.string2id[str] = newid
-                self.m_size += 1
-                if self.m_size >= self.max_cap:
-                    self.m_b_fixed = True
-                return newid
-            else:
-                return -1
-
-    def clear(self):
-        self.max_cap = 1e8
-        self.m_size = 0
-        self.m_b_fixed = False
-        self.id2string = []
-        self.string2id = {}
-
-    def set_fixed_flag(self, bfixed):
-        self.m_b_fixed = bfixed
-        if (not self.m_b_fixed) and (self.m_size >= self.max_cap):
-            self.m_b_fixed = True
-
-    def initial(self, elem_state, cutoff = 0):
-        for key in elem_state:
-            if  elem_state[key] > cutoff:
-                self.from_string(key)
-        self.set_fixed_flag(True)
-
-    def write(self, path):
-        outf = open(path, encoding='utf-8', mode='w')
-        for idx in range(self.m_size):
-            outf.write(self.id2string[idx] + " " + str(idx) + "\n")
-        outf.close()
-
-    def read(self, path):
-        inf = open(path, encoding='utf-8', mode='r')
-        for line in inf.readlines():
-            info = line.split(" ")
-            self.id2string.append(info[0])
-            self.string2id[info[0]] = int(info[1])
-        inf.close()
-        self.set_fixed_flag(True)
-        self.m_size = len(self.id2string)

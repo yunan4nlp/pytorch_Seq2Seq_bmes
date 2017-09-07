@@ -5,6 +5,7 @@ from instance import  Example
 from encoder import  Encoder
 from decoder import  Decoder
 from eval import Eval
+from common import getMaxIndex
 import torch.nn
 import torch.autograd
 import torch.nn.functional
@@ -13,6 +14,7 @@ import random
 class Trainer:
     def __init__(self):
         self.char_state = {}
+        self.word_state = {}
         self.bichar_state = {}
 
         self.hyperParams = HyperParams()
@@ -39,6 +41,10 @@ class Trainer:
         self.addTestAlpha(devInsts)
         self.addTestAlpha(testInsts)
 
+        self.hyperParams.wordAlpha.initialFromEmb(self.hyperParams.wordEmbFile)
+
+        self.word_state[self.hyperParams.unk] = self.hyperParams.wordCutOff + 1
+        self.word_state[self.hyperParams.padding] = self.hyperParams.wordCutOff + 1
 
         self.char_state[self.hyperParams.unk] = self.hyperParams.charCutOff + 1
         self.char_state[self.hyperParams.padding] = self.hyperParams.charCutOff + 1
@@ -46,12 +52,17 @@ class Trainer:
         self.bichar_state[self.hyperParams.unk] = self.hyperParams.bicharCutOff + 1
         self.bichar_state[self.hyperParams.padding] = self.hyperParams.bicharCutOff + 1
 
+        self.hyperParams.wordAlpha.initial(self.word_state, self.hyperParams.wordCutOff)
         self.hyperParams.charAlpha.initial(self.char_state, self.hyperParams.charCutOff)
         self.hyperParams.bicharAlpha.initial(self.bichar_state, self.hyperParams.bicharCutOff)
 
         self.hyperParams.charNUM = self.hyperParams.charAlpha.m_size
         self.hyperParams.charUNKID = self.hyperParams.charAlpha.from_string(self.hyperParams.unk)
         self.hyperParams.charPaddingID = self.hyperParams.charAlpha.from_string(self.hyperParams.padding)
+
+        self.hyperParams.wordNUM = self.hyperParams.wordAlpha.m_size
+        self.hyperParams.wordUNKID = self.hyperParams.wordAlpha.from_string(self.hyperParams.unk)
+        self.hyperParams.wordPaddingID = self.hyperParams.wordAlpha.from_string(self.hyperParams.padding)
 
         self.hyperParams.bicharNUM = self.hyperParams.bicharAlpha.m_size
         self.hyperParams.bicharUNKID = self.hyperParams.bicharAlpha.from_string(self.hyperParams.unk)
@@ -60,6 +71,7 @@ class Trainer:
 
         self.hyperParams.charAlpha.set_fixed_flag(True)
         self.hyperParams.bicharAlpha.set_fixed_flag(True)
+        self.hyperParams.wordAlpha.set_fixed_flag(True)
         self.hyperParams.labelAlpha.set_fixed_flag(True)
 
         print('=========================================')
@@ -70,6 +82,8 @@ class Trainer:
         print("bichar num: ", self.hyperParams.bicharNUM)
         print("bichar UNK ID: ", self.hyperParams.bicharUNKID)
         print("bichar Padding ID: ", self.hyperParams.bicharPaddingID)
+
+        print("word num: ", self.hyperParams.wordNUM)
 
         print("label size: ", self.hyperParams.labelSize)
         print('=========================================')
@@ -89,7 +103,7 @@ class Trainer:
         exams = []
         for inst in insts:
             example = Example()
-
+            example.m_char = inst.m_char
             example.size = len(inst.m_char)
             for idx in range(example.size):
                 c = inst.m_char[idx]
@@ -196,13 +210,12 @@ class Trainer:
                 decoder_optimizer.zero_grad()
 
                 encoderHidden = self.encoder.init_hidden(batch)
-                encoderOutput, encoderHidden = self.encoder(batchCharFeats, batchBiCharFeats,encoderHidden)
+                encoderOutput, encoderHidden = self.encoder(batchCharFeats, batchBiCharFeats, encoderHidden)
                 loss = 0
-                decoderOutput = self.decoder(encoderOutput)
-
+                decoderOutput = self.decoder(batch, encoderOutput, exams)
                 for exam in exams:
                     for idx in range(exam.size):
-                        labelID = self.getMaxIndex(decoderOutput[idx])
+                        labelID = getMaxIndex(self.hyperParams, decoderOutput[idx])
                         if labelID == exam.labelIndexes[idx]:
                             train_eval.correct_num += 1
                         train_eval.gold_num += 1
@@ -272,24 +285,16 @@ class Trainer:
         batchCharFeats, batchBiCharFeats, batchLabel, batch = self.getBatchFeatLabel(exams)
         encoderHidden = self.encoder.init_hidden(batch)
         encoderOutput, encoderHidden = self.encoder(batchCharFeats, batchBiCharFeats, encoderHidden)
-        decoderOutput = self.decoder(encoderOutput)
+        decoderOutput = self.decoder(batch, encoderOutput, exams)
         sent = []
         for idx in range(exam.size):
-            labelID = self.getMaxIndex(decoderOutput[idx])
+            labelID = getMaxIndex(self.hyperParams, decoderOutput[idx])
             label = self.hyperParams.labelAlpha.from_id(labelID)
             sent.append(label)
         return sent
 
 
 
-    def getMaxIndex(self, decoder_output):
-        max = decoder_output.data[0]
-        maxIndex = 0
-        for idx in range(1, self.hyperParams.labelSize):
-            if decoder_output.data[idx] > max:
-                max = decoder_output.data[idx]
-                maxIndex = idx
-        return maxIndex
 
 
 

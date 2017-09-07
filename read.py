@@ -2,6 +2,7 @@ from instance import  Instance
 import torch
 import re
 import torch.nn as nn
+from common import get_words
 import unicodedata
 
 class Reader:
@@ -20,6 +21,7 @@ class Reader:
             line = line.strip()
             if line == "" and len(inst.m_char) != 0:
                 if (maxInst == -1) or (maxInst > len(insts)):
+                    inst.m_word = get_words(inst.m_char, inst.m_label)
                     insts.append(inst)
                 else:
                     return insts
