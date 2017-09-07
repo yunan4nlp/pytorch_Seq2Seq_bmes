@@ -45,6 +45,7 @@ class Trainer:
 
         self.word_state[self.hyperParams.unk] = self.hyperParams.wordCutOff + 1
         self.word_state[self.hyperParams.padding] = self.hyperParams.wordCutOff + 1
+        self.word_state[self.hyperParams.start] = self.hyperParams.wordCutOff + 1
 
         self.char_state[self.hyperParams.unk] = self.hyperParams.charCutOff + 1
         self.char_state[self.hyperParams.padding] = self.hyperParams.charCutOff + 1
@@ -84,6 +85,9 @@ class Trainer:
         print("bichar Padding ID: ", self.hyperParams.bicharPaddingID)
 
         print("word num: ", self.hyperParams.wordNUM)
+        print("word UNK id: ", self.hyperParams.wordUNKID)
+        print("word padding id: ", self.hyperParams.wordPaddingID)
+        print("word start id: ", self.hyperParams.wordSTARTID)
 
         print("label size: ", self.hyperParams.labelSize)
         print('=========================================')

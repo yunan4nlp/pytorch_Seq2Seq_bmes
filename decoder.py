@@ -30,7 +30,7 @@ class Decoder(nn.Module):
             self.lastWords.append('-null-')
             labels = []
             batch_labels.append(labels)
-            last_word_indexes.data[idy] = self.hyperParams.wordUNKID
+            last_word_indexes.data[idy] = self.hyperParams.wordSTARTID
 
         output = []
         for idx in range(sent_len):

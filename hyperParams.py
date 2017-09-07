@@ -8,7 +8,7 @@ class HyperParams:
         self.unk = '-UNKNOWN-'
         self.padding = '-null-'
 
-        self.start = '-start-'
+        self.start = '<s>'
         self.end = '-end-'
 
         self.charPaddingID = 0
@@ -22,6 +22,7 @@ class HyperParams:
         self.wordPaddingID = 0
         self.wordUNKID = 0
         self.wordNUM = 0
+        self.wordSTARTID = 0
 
         self.clip = 10
         self.maxIter = 100
