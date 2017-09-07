@@ -50,8 +50,8 @@ class HyperParams:
         self.hiddenSize = 50
         self.thread = 1
         self.learningRate = 0.001
-        self.maxInstance = 5
-        self.batch = 1
+        self.maxInstance = 10
+        self.batch = 2
 
         self.wordAlpha = Alphabet()
         self.charAlpha = Alphabet()

@@ -134,8 +134,8 @@ class Trainer:
         maxSentSize = 0
         batch = len(exams)
         for e in exams:
-            if maxSentSize < len(e.labelIndexes):
-                maxSentSize = len(e.labelIndexes)
+            if maxSentSize < e.size:
+                maxSentSize = e.size
         batchCharFeats = torch.autograd.Variable(torch.LongTensor(batch, maxSentSize))
         batchBiCharFeats = torch.autograd.Variable(torch.LongTensor(batch, maxSentSize))
         batchLabel = torch.autograd.Variable(torch.LongTensor(batch * maxSentSize))
@@ -157,7 +157,7 @@ class Trainer:
                     batchLabel.data[idx * maxSentSize + idy] = e.labelIndexes[idy]
                 else:
                     batchLabel.data[idx * maxSentSize + idy] = 0
-        return batchCharFeats, batchBiCharFeats, batchLabel, batch
+        return batchCharFeats, batchBiCharFeats, batchLabel, batch, maxSentSize
 
 
     def train(self, train_file, dev_file, test_file, model_file):
@@ -209,7 +209,7 @@ class Trainer:
                     end_pos = train_num
                 for idx in range(start_pos, end_pos):
                     exams.append(trainExamples[indexes[idx]])
-                batchCharFeats, batchBiCharFeats, batchLabel, batch = self.getBatchFeatLabel(exams)
+                batchCharFeats, batchBiCharFeats, batchLabel, batch, maxSentSize = self.getBatchFeatLabel(exams)
                 encoder_optimizer.zero_grad()
                 decoder_optimizer.zero_grad()
 
@@ -217,10 +217,11 @@ class Trainer:
                 encoderOutput, encoderHidden = self.encoder(batchCharFeats, batchBiCharFeats, encoderHidden)
                 loss = 0
                 decoderOutput = self.decoder(batch, encoderOutput, exams)
-                for exam in exams:
-                    for idx in range(exam.size):
-                        labelID = getMaxIndex(self.hyperParams, decoderOutput[idx])
-                        if labelID == exam.labelIndexes[idx]:
+                for idx in range(batch):
+                    exam = exams[idx]
+                    for idy in range(exam.size):
+                        labelID = getMaxIndex(self.hyperParams, decoderOutput[idx * maxSentSize + idy])
+                        if labelID == exam.labelIndexes[idy]:
                             train_eval.correct_num += 1
                         train_eval.gold_num += 1
 
@@ -286,7 +287,7 @@ class Trainer:
     def predict(self, exam):
         exams = []
         exams.append(exam)
-        batchCharFeats, batchBiCharFeats, batchLabel, batch = self.getBatchFeatLabel(exams)
+        batchCharFeats, batchBiCharFeats, batchLabel, batch, _ = self.getBatchFeatLabel(exams)
         encoderHidden = self.encoder.init_hidden(batch)
         encoderOutput, encoderHidden = self.encoder(batchCharFeats, batchBiCharFeats, encoderHidden)
         decoderOutput = self.decoder(batch, encoderOutput, exams)

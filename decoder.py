@@ -10,6 +10,8 @@ class Decoder(nn.Module):
 
         reader = Reader()
         self.wordEmb, self.wordDim = reader.load_pretrain(hyperParams.wordEmbFile, hyperParams.wordAlpha, hyperParams.unk)
+
+        self.wordEmb.weight.requires_grad = hyperParams.wordFineTune
         self.dropOut = torch.nn.Dropout(hyperParams.dropProb)
         self.lastWords = []
         self.hyperParams = hyperParams
@@ -25,14 +27,13 @@ class Decoder(nn.Module):
         self.lastWords = []
         batch_labels = []
         last_word_indexes = torch.autograd.Variable(torch.LongTensor(batch))
-
+        output = []
         for idy in range(batch):
-            self.lastWords.append('-null-')
-            labels = []
-            batch_labels.append(labels)
+            self.lastWords.append('<s>')
+            batch_labels.append([])
+            output.append([])
             last_word_indexes.data[idy] = self.hyperParams.wordSTARTID
 
-        output = []
         for idx in range(sent_len):
             char_presentation = encoder_output.permute(1, 0, 2)[idx]
             last_word_presentation = self.wordEmb(last_word_indexes)
@@ -40,9 +41,12 @@ class Decoder(nn.Module):
             concat = torch.cat((char_presentation, last_word_presentation), 1)
 
             hidden = self.linearLayer(concat)
-            output.append(hidden)
+            #print(hidden.size())
+            batch_hidden = torch.chunk(hidden, batch, 0)
+            #print(batch_out[0].size())
 
             for idy in range(batch):
+                output[idy].append(batch_hidden[idy])
                 labelID = getMaxIndex(self.hyperParams, hidden[idy])
                 label = self.hyperParams.labelAlpha.from_id(labelID)
                 batch_labels[idy].append(label)
@@ -52,14 +56,19 @@ class Decoder(nn.Module):
                 if wordID < 0:
                     wordID = self.hyperParams.wordUNKID
                 last_word_indexes.data[idy] = wordID
+        for idy in range(batch):
+            output[idy] = torch.cat(output[idy], 0)
         output = torch.cat(output, 0)
         output = self.softmax(output)
-        return  output
+        return output
+        '''
 
 
-        #linear = self.linearLayer(torch.cat(encoder_output, 0))
-        #output = self.softmax(linear)
-        #return output
+        linear = self.linearLayer(torch.cat(encoder_output, 0))
+        output = self.softmax(linear)
+        print(output.size())
+        return output
+        '''
 
     def prepare(self, m_char, index, labels, batchIndex):
         if index < len(m_char):
