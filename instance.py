@@ -30,6 +30,7 @@ class Example:
     def __init__(self):
         self.m_char = []
         self.m_word = []
+        self.m_label = []
         self.charIndexes = []
         self.bicharIndexes = []
         self.size = 0

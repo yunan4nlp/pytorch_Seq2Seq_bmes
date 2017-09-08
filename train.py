@@ -108,6 +108,8 @@ class Trainer:
         for inst in insts:
             example = Example()
             example.m_char = inst.m_char
+            example.m_label = inst.m_label
+
             example.size = len(inst.m_char)
             for idx in range(example.size):
                 c = inst.m_char[idx]
@@ -216,7 +218,7 @@ class Trainer:
                 encoderHidden = self.encoder.init_hidden(batch)
                 encoderOutput, encoderHidden = self.encoder(batchCharFeats, batchBiCharFeats, encoderHidden)
                 loss = 0
-                decoderOutput = self.decoder(batch, encoderOutput, exams)
+                decoderOutput = self.decoder(batch, encoderOutput, exams, bTrain=True)
                 for idx in range(batch):
                     exam = exams[idx]
                     for idy in range(exam.size):

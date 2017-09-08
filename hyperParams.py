@@ -51,7 +51,7 @@ class HyperParams:
         self.thread = 1
         self.learningRate = 0.001
         self.maxInstance = 10
-        self.batch = 2
+        self.batch = 1
 
         self.wordAlpha = Alphabet()
         self.charAlpha = Alphabet()
@@ -61,6 +61,15 @@ class HyperParams:
         print('wordCutOff = ', self.wordCutOff)
         print('wordEmbSize = ', self.wordEmbSize)
         print('wordFineTune = ', self.wordFineTune)
+
+        print('charCutOff = ', self.charCutOff)
+        print('charEmbSize = ', self.charEmbSize)
+        print('charFineTune = ', self.charFineTune)
+
+        print('bicharCutOff = ', self.bicharCutOff)
+        print('bicharEmbSize = ', self.bicharEmbSize)
+        print('bicharFineTune = ', self.bicharFineTune)
+
         print('rnnHiddenSize = ', self.rnnHiddenSize)
         print('learningRate = ', self.learningRate)
         print('batch = ', self.batch)

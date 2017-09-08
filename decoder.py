@@ -22,7 +22,7 @@ class Decoder(nn.Module):
         self.softmax = nn.LogSoftmax()
 
 
-    def forward(self, batch, encoder_output, exams):
+    def forward(self, batch, encoder_output, exams, bTrain=False):
         sent_len = encoder_output.size()[1]
         self.lastWords = []
         batch_labels = []
@@ -50,7 +50,11 @@ class Decoder(nn.Module):
                 labelID = getMaxIndex(self.hyperParams, hidden[idy])
                 label = self.hyperParams.labelAlpha.from_id(labelID)
                 batch_labels[idy].append(label)
-                self.prepare(exams[idy].m_char, idx, batch_labels[idy], idy)
+
+                if bTrain:
+                    self.prepare(exams[idy].m_char, idx, exams[idy].m_label, idy)
+                else:
+                    self.prepare(exams[idy].m_char, idx, batch_labels[idy], idy)
 
                 wordID = self.hyperParams.wordAlpha.from_string(self.lastWords[idy])
                 if wordID < 0:
@@ -62,8 +66,6 @@ class Decoder(nn.Module):
         output = self.softmax(output)
         return output
         '''
-
-
         linear = self.linearLayer(torch.cat(encoder_output, 0))
         output = self.softmax(linear)
         print(output.size())
@@ -85,3 +87,4 @@ class Decoder(nn.Module):
                     self.lastWords[batchIndex] = tmp_word[::-1]
         else:
             self.lastWords[batchIndex] = '-null-'
+
